@@ -2,7 +2,6 @@
 use rand::seq::SliceRandom;
 use rand::RngCore;
 
-
 // TRAITS
 pub trait Individual {
     fn fitness(&self) -> f32;
@@ -24,11 +23,7 @@ impl RouletteWheelSelection {
 }
 
 impl SelectionMethod for RouletteWheelSelection {
-    fn select<'a, I>(
-       &self,
-       rng: &mut dyn RngCore,
-       population: &'a [I],
-    ) -> &'a I
+    fn select<'a, I>(&self, rng: &mut dyn RngCore, population: &'a [I]) -> &'a I
     where
         I: Individual,
     {
@@ -62,15 +57,12 @@ impl GeneticAlgorithm {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use rand::SeedableRng;
     use rand_chacha::ChaCha8Rng;
     use std::collections::BTreeMap;
-
 
     #[cfg(test)]
     #[derive(Clone, Debug)]
@@ -104,20 +96,14 @@ mod tests {
             TestIndividual::new(3.0),
         ];
 
-        let mut actual_histogram = BTreeMap::new();
+        let actual_histogram: BTreeMap<i32, _> = (0..1000)
+            .map(|_| method.select(&mut rng, &population))
+            .fold(Default::default(), |mut histogram, individual| {
+                *histogram.entry(individual.fitness() as _).or_default() += 1;
 
-        //               there is nothing special about this thousand;
-        //          v--v a number as low as fifty might do the trick, too
-        for _ in 0..1000 {
-            let fitness = method
-                .select(&mut rng, &population)
-                .fitness() as i32;
-    
-            *actual_histogram
-                .entry(fitness)
-                .or_insert(0) += 1;
-        }
-    
+                histogram
+            });
+
         let expected_histogram = maplit::btreemap! {
             // fitness => how many times this fitness has been chosen
             1 => 98,
@@ -125,7 +111,7 @@ mod tests {
             3 => 278,
             4 => 422,
         };
-    
+
         assert_eq!(actual_histogram, expected_histogram);
     }
 }
