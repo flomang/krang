@@ -1,11 +1,40 @@
+// TODO implement rank selection roulette wheel selection is fine now
 use rand::seq::SliceRandom;
 use rand::RngCore;
 
+
+// TRAITS
+pub trait Individual {
+    fn fitness(&self) -> f32;
+}
+
+pub trait SelectionMethod {
+    fn select<'a, I>(&self, rng: &mut dyn RngCore, population: &'a [I]) -> &'a I
+    where
+        I: Individual;
+}
+
+// STRUCTS
 pub struct RouletteWheelSelection;
 
 impl RouletteWheelSelection {
     pub fn new() -> Self {
         Self
+    }
+}
+
+impl SelectionMethod for RouletteWheelSelection {
+    fn select<'a, I>(
+       &self,
+       rng: &mut dyn RngCore,
+       population: &'a [I],
+    ) -> &'a I
+    where
+        I: Individual,
+    {
+        population
+            .choose_weighted(rng, |individual| individual.fitness())
+            .expect("got an empty population")
     }
 }
 
@@ -16,7 +45,10 @@ impl GeneticAlgorithm {
         Self
     }
 
-    pub fn evolve<I>(&self, population: &[I]) -> Vec<I> {
+    pub fn evolve<I>(&self, population: &[I]) -> Vec<I>
+    where
+        I: Individual,
+    {
         assert!(!population.is_empty());
         //(0..population.len())
         //    .map(|_| {
@@ -30,26 +62,7 @@ impl GeneticAlgorithm {
     }
 }
 
-pub trait Individual {
-    fn fitness(&self) -> f32;
-}
 
-pub trait SelectionMethod {
-    fn select<'a, I>(&self, rng: &mut dyn RngCore, population: &'a [I]) -> &'a I
-    where
-        I: Individual;
-}
-
-impl SelectionMethod for RouletteWheelSelection {
-    fn select<'a, I>(&self, rng: &mut dyn RngCore, population: &'a [I]) -> &'a I
-    where
-        I: Individual,
-    {
-        population
-            .choose_weighted(rng, |individual| individual.fitness())
-            .expect("got an empty population")
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -88,7 +101,7 @@ mod tests {
             TestIndividual::new(3.0),
         ];
 
-        let actual = RouletteWheelSelection::new().select(&mut rng, &population);
+        let _actual = RouletteWheelSelection::new().select(&mut rng, &population);
 
         assert!(true);
     }
