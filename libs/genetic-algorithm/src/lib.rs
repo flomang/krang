@@ -118,13 +118,13 @@ mod tests {
                 .or_insert(0) += 1;
         }
     
-        let expected_histogram = BTreeMap::from_iter(vec![
-            // (fitness, how many times this fitness has been chosen)
-            (1, 98),
-            (2, 202),
-            (3, 278),
-            (4, 422),
-        ]);
+        let expected_histogram = maplit::btreemap! {
+            // fitness => how many times this fitness has been chosen
+            1 => 98,
+            2 => 202,
+            3 => 278,
+            4 => 422,
+        };
     
         assert_eq!(actual_histogram, expected_histogram);
     }
