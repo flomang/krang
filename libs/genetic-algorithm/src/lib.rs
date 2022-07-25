@@ -1,7 +1,6 @@
 // TODO implement rank selection roulette wheel selection is fine now
 use rand::seq::SliceRandom;
 use rand::RngCore;
-use std::ops::Index;
 
 // TRAITS
 pub trait Individual {
@@ -34,13 +33,22 @@ impl Chromosome {
     }
 }
 
-impl Index<usize> for Chromosome {
+impl std::ops::Index<usize> for Chromosome {
     type Output = f32;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.genes[index]
     }
 }
+
+impl std::iter::FromIterator<f32> for Chromosome {
+    fn from_iter<T: IntoIterator<Item = f32>>(iter: T) -> Self {
+        Self {
+            genes: iter.into_iter().collect(),
+        }
+    }
+}
+
 
 pub struct RouletteWheelSelection;
 
@@ -208,9 +216,23 @@ mod tests {
 
         #[test]
         fn test() {
-            let chromosome = Chromosome {
-                genes: vec![3.0, 1.0, 2.0],
-            };
+            let chromosome = chromosome(); 
+
+            assert_eq!(chromosome[0], 3.0);
+            assert_eq!(chromosome[1], 1.0);
+            assert_eq!(chromosome[2], 2.0);
+        }
+    }
+
+    mod from_iterator {
+        use super::*;
+
+        #[test]
+        fn test() {
+            let chromosome: Chromosome =
+                vec![3.0, 1.0, 2.0]
+                    .into_iter()
+                    .collect();
 
             assert_eq!(chromosome[0], 3.0);
             assert_eq!(chromosome[1], 1.0);
