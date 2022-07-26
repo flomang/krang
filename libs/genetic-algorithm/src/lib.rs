@@ -1,8 +1,18 @@
 // TODO implement rank selection roulette wheel selection is fine now
 use rand::seq::SliceRandom;
+use rand::Rng;
 use rand::RngCore;
 
 // TRAITS
+pub trait CrossoverMethod {
+    fn crossover(
+        &self,
+        rng: &mut dyn RngCore,
+        parent_a: &Chromosome,
+        parent_b: &Chromosome,
+    ) -> Chromosome;
+}
+
 pub trait Individual {
     fn chromosome(&self) -> &Chromosome;
     fn fitness(&self) -> f32;
@@ -81,14 +91,18 @@ impl SelectionMethod for RouletteWheelSelection {
 
 pub struct GeneticAlgorithm<S> {
     selection_method: S,
+    crossover_method: Box<dyn CrossoverMethod>,
 }
 
 impl<S> GeneticAlgorithm<S>
 where
     S: SelectionMethod,
 {
-    pub fn new(selection_method: S) -> Self {
-        Self { selection_method }
+    pub fn new(selection_method: S, crossover_method: impl CrossoverMethod + 'static) -> Self {
+        Self {
+            selection_method,
+            crossover_method: Box::new(crossover_method),
+        }
     }
 
     pub fn evolve<I>(&self, rng: &mut dyn RngCore, population: &[I]) -> Vec<I>
@@ -99,14 +113,43 @@ where
 
         (0..population.len())
             .map(|_| {
-                let _parent_a = self.selection_method.select(rng, population);
+                let parent_a = self.selection_method.select(rng, population).chromosome();
 
-                let _parent_b = self.selection_method.select(rng, population);
+                let parent_b = self.selection_method.select(rng, population).chromosome();
 
-                // TODO crossover
+                let mut _child = self.crossover_method.crossover(rng, parent_a, parent_b);
+
                 // TODO mutation
                 todo!()
             })
+            .collect()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct UniformCrossover;
+
+impl UniformCrossover {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl CrossoverMethod for UniformCrossover {
+    fn crossover(
+        &self,
+        rng: &mut dyn RngCore,
+        parent_a: &Chromosome,
+        parent_b: &Chromosome,
+    ) -> Chromosome {
+        assert_eq!(parent_a.len(), parent_b.len());
+
+        let parent_a = parent_a.iter();
+        let parent_b = parent_b.iter();
+
+        parent_a
+            .zip(parent_b)
+            .map(|(&a, &b)| if rng.gen_bool(0.5) { a } else { b })
             .collect()
     }
 }
@@ -270,6 +313,29 @@ mod tests {
             assert_eq!(genes[0], 3.0);
             assert_eq!(genes[1], 1.0);
             assert_eq!(genes[2], 2.0);
+        }
+    }
+
+    mod crossover {
+        use super::*;
+
+        #[test]
+        fn test() {
+            let mut rng = ChaCha8Rng::from_seed(Default::default());
+            let parent_a: Chromosome = (1..=100).map(|n| n as f32).collect();
+
+            let parent_b: Chromosome = (1..=100).map(|n| -n as f32).collect();
+
+            let child = UniformCrossover::new().crossover(&mut rng, &parent_a, &parent_b);
+
+            // Number of genes different between `child` and `parent_a`
+            let diff_a = child.iter().zip(parent_a).filter(|(c, p)| *c != p).count();
+
+            // Number of genes different between `child` and `parent_b`
+            let diff_b = child.iter().zip(parent_b).filter(|(c, p)| *c != p).count();
+
+            assert_eq!(diff_a, 49);
+            assert_eq!(diff_b, 51);
         }
     }
 }
