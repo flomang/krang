@@ -4,6 +4,7 @@ use rand::RngCore;
 
 // TRAITS
 pub trait Individual {
+    fn chromosome(&self) -> &Chromosome;
     fn fitness(&self) -> f32;
 }
 
@@ -134,6 +135,10 @@ mod tests {
     impl Individual for TestIndividual {
         fn fitness(&self) -> f32 {
             self.fitness
+        }
+
+        fn chromosome(&self) -> &Chromosome {
+            panic!("not supported for TestIndividual")
         }
     }
 
