@@ -1,5 +1,26 @@
 import * as sim from "lib-simulation-wasm";
 
+function redraw() {
+    ctxt.clearRect(0, 0, viewportWidth, viewportHeight);
+
+    simulation.step();
+
+    for (const animal of simulation.world().animals) {
+        ctxt.drawTriangle(
+            animal.x * viewportWidth,
+            animal.y * viewportHeight,
+            0.01 * viewportWidth,
+            animal.rotation,
+        );
+    }
+
+    // requestAnimationFrame() schedules code only for the next frame.
+    //
+    // Because we want for our simulation to continue forever, we've
+    // gotta keep re-scheduling our function:
+    requestAnimationFrame(redraw);
+}
+
 CanvasRenderingContext2D.prototype.drawTriangle =
     function (x, y, size, rotation) {
         this.beginPath();
@@ -48,15 +69,4 @@ const ctxt = viewport.getContext('2d');
 // Automatically scales all operations by `viewportScale` - otherwise
 // we'd have to `* viewportScale` everything by hand
 ctxt.scale(viewportScale, viewportScale);
-
-// Rest of the code follows without any changes
-ctxt.fillStyle = 'rgb(0, 0, 0)';
-
-for (const animal of simulation.world().animals) {
-    ctxt.drawTriangle(
-        animal.x * viewportWidth,
-        animal.y * viewportHeight,
-        0.01 * viewportWidth,
-        animal.rotation,
-    );
-}
+redraw();

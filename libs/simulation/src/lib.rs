@@ -13,6 +13,19 @@ impl Simulation {
         }
     }
 
+
+    /// Performs a single step - a single second, so to say - of our
+    /// simulation.
+    pub fn step(&mut self) {
+        for animal in &mut self.world.animals {
+            //animal.position += animal.rotation * animal.speed;
+            animal.position += animal.rotation * na::Vector2::new(animal.speed, 0.0);
+
+            animal.position.x = na::wrap(animal.position.x, 0.0, 1.0);
+            animal.position.y = na::wrap(animal.position.y, 0.0, 1.0);
+        }
+    }
+
     pub fn world(&self) -> &World {
         &self.world
     }
