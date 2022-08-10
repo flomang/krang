@@ -43,7 +43,22 @@ impl From<&sim::World> for World {
             .map(Animal::from)
             .collect();
 
-        Self { animals }
+        let foods = world
+            .foods()
+            .iter()
+            .map(Food::from)
+            .collect();
+
+        Self { animals, foods }
+    }
+}
+
+impl From<&sim::Food> for Food {
+    fn from(food: &sim::Food) -> Self {
+        Self {
+            x: food.position().x,
+            y: food.position().y,
+        }
     }
 }
 
@@ -60,6 +75,13 @@ impl From<&sim::Animal> for Animal {
 #[derive(Clone, Debug, Serialize)]
 pub struct World {
     pub animals: Vec<Animal>,
+    pub foods: Vec<Food>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Food {
+    pub x: f32,
+    pub y: f32,
 }
 
 #[derive(Clone, Debug, Serialize)]

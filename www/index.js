@@ -5,6 +5,17 @@ function redraw() {
 
     simulation.step();
 
+
+    const world = simulation.world();
+
+    for (const food of world.foods) {
+        ctxt.drawCircle(
+            food.x * viewportWidth,
+            food.y * viewportHeight,
+            (0.01 / 2.0) * viewportWidth,
+        );
+    }
+
     for (const animal of simulation.world().animals) {
         ctxt.drawTriangle(
             animal.x * viewportWidth,
@@ -45,9 +56,29 @@ CanvasRenderingContext2D.prototype.drawTriangle =
             y + Math.sin(rotation) * size * 1.5,
         );
 
-        this.stroke();
+        this.fillStyle = 'rgb(255, 255, 255)'; // A nice white color
+        this.fill();
     };
 
+
+ CanvasRenderingContext2D.prototype.drawCircle =
+    function(x, y, radius) {
+        this.beginPath();
+
+        // ---
+        // | Circle's center.
+        // ----- v -v
+        this.arc(x, y, radius, 0, 2.0 * Math.PI);
+        // ------------------- ^ -^-----------^
+        // | Range at which the circle starts and ends, in radians.
+        // |
+        // | By manipulating these two parameters you can e.g. draw
+        // | only half of a circle, Pac-Man style.
+        // ---
+
+        this.fillStyle = 'rgb(0, 255, 128)'; // A nice green color
+        this.fill();
+    };
 
 const simulation = new sim.Simulation();
 const world = simulation.world();
