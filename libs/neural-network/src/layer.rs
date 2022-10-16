@@ -25,7 +25,7 @@ impl Layer {
             .map(|_| Neuron::from_weights(input_size, weights))
             .collect();
 
-        Self::new(neurons)
+        Self { neurons }
     }
 
     pub fn random(rng: &mut dyn RngCore, input_neurons: usize, output_neurons: usize) -> Self {

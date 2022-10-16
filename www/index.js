@@ -5,7 +5,6 @@ function redraw() {
 
     simulation.step();
 
-
     const world = simulation.world();
 
     for (const food of world.foods) {
@@ -82,6 +81,10 @@ CanvasRenderingContext2D.prototype.drawTriangle =
 
 const simulation = new sim.Simulation();
 const world = simulation.world();
+
+document.getElementById('train').onclick = function() {
+    console.log(simulation.train());
+};
 
 const viewport = document.getElementById('viewport');
 const viewportWidth = viewport.width;

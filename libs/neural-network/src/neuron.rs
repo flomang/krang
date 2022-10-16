@@ -30,7 +30,7 @@ impl Neuron {
             .map(|_| weights.next().expect("got not enough weights"))
             .collect();
 
-        Self::new(bias, weights)
+        Self { bias, weights }
     }
 
     pub fn propagate(&self, inputs: &[f32]) -> f32 {

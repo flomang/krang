@@ -1,11 +1,16 @@
-pub use self::{animal::*, eye::*, food::*, world::*};
+pub use self::{animal::*, brain::*, eye::*, food::*, world::*};
 
 mod animal;
+mod animal_individual;
+mod brain;
 mod eye;
 mod food;
 mod world;
 
+use self::animal_individual::*;
+use lib_genetic_algorithm as ga;
 use lib_neural_network as nn;
+
 use nalgebra as na;
 use rand::{Rng, RngCore};
 
@@ -48,23 +53,68 @@ const SPEED_ACCEL: f32 = 0.2;
 /// to play nice.
 const ROTATION_ACCEL: f32 = FRAC_PI_2;
 
+/// How much `.step()`-s have to occur before we push data into the
+/// genetic algorithm.
+///
+/// Value that's too low might prevent the birds from learning, while
+/// a value that's too high will make the evolution unnecessarily
+/// slower.
+///
+/// You can treat this number as "for how many steps each bird gets
+/// to live"; 2500 was chosen with a fair dice roll.
+const GENERATION_LENGTH: usize = 2500;
+
 pub struct Simulation {
     world: World,
+    ga: ga::GeneticAlgorithm<ga::RouletteWheelSelection>,
+    age: usize,
 }
 
 impl Simulation {
     pub fn random(rng: &mut dyn RngCore) -> Self {
-        Self {
-            world: World::random(rng),
-        }
+        let world = World::random(rng);
+
+        let ga = ga::GeneticAlgorithm::new(
+            ga::RouletteWheelSelection::new(),
+            ga::UniformCrossover::new(),
+            ga::GaussianMutation::new(0.01, 0.3),
+            // ---------------------- ^--^ -^-^
+            // | Chosen with a bit of experimentation.
+            // |
+            // | Higher values can make the simulation more chaotic,
+            // | which - a bit counterintuitively - might allow for
+            // | it to discover *better* solutions; but the trade-off
+            // | is that higher values might also cause current, good
+            // | enough solutions to be discarded.
+            // ---
+        );
+
+        Self { world, ga, age: 0 }
     }
 
     /// Performs a single step - a single second, so to say - of our
     /// simulation.
-    pub fn step(&mut self, rng: &mut dyn RngCore) {
+    pub fn step(&mut self, rng: &mut dyn RngCore) -> Option<ga::Statistics> {
         self.process_collisions(rng);
         self.process_brains();
         self.process_movements();
+
+        self.age += 1;
+
+        if self.age > GENERATION_LENGTH {
+            Some(self.evolve(rng))
+        } else {
+            None
+        }
+    }
+
+    /// Fast-forwards 'till the end of the current generation.
+    pub fn train(&mut self, rng: &mut dyn RngCore) -> ga::Statistics {
+        loop {
+            if let Some(summary) = self.step(rng) {
+                return summary;
+            }
+        }
     }
 
     pub fn world(&self) -> &World {
@@ -78,7 +128,7 @@ impl Simulation {
                     .eye
                     .process_vision(animal.position, animal.rotation, &self.world.foods);
 
-            let response = animal.brain.propagate(vision);
+            let response = animal.brain.nn.propagate(vision);
 
             // ---
             // | Limits number to given range.
@@ -116,6 +166,7 @@ impl Simulation {
                 let distance = na::distance(&animal.position, &food.position);
 
                 if distance <= 0.01 {
+                    animal.satiation += 1;
                     food.position = rng.gen();
                 }
             }
@@ -129,6 +180,37 @@ impl Simulation {
             animal.position.x = na::wrap(animal.position.x, 0.0, 1.0);
             animal.position.y = na::wrap(animal.position.y, 0.0, 1.0);
         }
+    }
+
+    fn evolve(&mut self, rng: &mut dyn RngCore) -> ga::Statistics {
+        self.age = 0;
+
+        // Step 1: Prepare birdies to be sent into the genetic algorithm
+        let current_population: Vec<_> = self
+            .world
+            .animals
+            .iter()
+            .map(AnimalIndividual::from_animal)
+            .collect();
+
+        // Step 2: Evolve birdies
+        //let evolved_population = self.ga.evolve(rng, &current_population);
+        let (evolved_population, stats) = self.ga.evolve(rng, &current_population);
+
+        // Step 3: Bring birdies back from the genetic algorithm
+        self.world.animals = evolved_population
+            .into_iter()
+            .map(|individual| individual.into_animal(rng))
+            .collect();
+
+        // Step 4: Restart foods
+        //
+        // (this is not strictly necessary, but it allows to easily spot
+        // when the evolution happens - so it's more of a UI thing.)
+        for food in &mut self.world.foods {
+            food.position = rng.gen();
+        }
+        stats
     }
 }
 
