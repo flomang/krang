@@ -1,4 +1,4 @@
 [workspace]
 members = [
-    "libs/*", # look má, wildcards!
+    "libs/*", "yew-blog" 
 ]
