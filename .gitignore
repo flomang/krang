@@ -26,6 +26,7 @@ Cargo.lock
 .env
 **/src/secret.key
 /act/
+.cache
 
 # End of https://www.gitignore.io/api/rust,code
 node_modules

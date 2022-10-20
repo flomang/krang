@@ -1,4 +1,4 @@
 [workspace]
 members = [
-    "libs/*", "yew-blog" 
+    "libs/*", "yew-blog", "yew-blog2"
 ]
