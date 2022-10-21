@@ -1,0 +1,28 @@
+[package]
+name = "yew-app"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+rand = "0.8"
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+yew = { version = "0.19" }
+lib-simulation = { path = "../libs/simulation" }
+getrandom = { version = "0.2", features = ["js"] }
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  'Document',
+  'Element',
+  'Window',
+  'HtmlCanvasElement',
+  'CanvasRenderingContext2d',
+  'WebGlBuffer',
+  'WebGlProgram',
+  'WebGlRenderingContext',
+  'WebGlShader',
+  'WebGlUniformLocation',
+]

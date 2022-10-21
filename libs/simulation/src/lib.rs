@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub use self::{animal::*, brain::*, eye::*, food::*, world::*};
 
 mod animal;

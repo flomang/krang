@@ -1,4 +1,2 @@
 [workspace]
-members = [
-    "libs/*", "yew-blog", "yew-blog2"
-]
+members = ["libs/*", "yew-app", "yew-blog", "yew-blog2"]
