@@ -70,13 +70,16 @@ impl Component for App {
         if !first_render {
             return;
         }
+
+        // TODO
         // Once rendered, store references for the canvas and GL context. These can be used for
         // resizing the rendering area when the window or canvas element are resized, as well as
         // for making GL calls.
-        let _document = web_sys::window().unwrap().document().unwrap();
-        let window = web_sys::window().unwrap();
+        //let _document = web_sys::window().unwrap().document().unwrap();
 
+        let window = window().unwrap();
         let canvas = self.node_ref.cast::<HtmlCanvasElement>().unwrap();
+
         let viewport_width = canvas.width();
         let viewport_height = canvas.height();
         let viewport_scale = window.device_pixel_ratio();
@@ -84,16 +87,11 @@ impl Component for App {
         canvas.set_width(viewport_width * viewport_scale as u32);
         canvas.set_height(viewport_height * viewport_scale as u32);
 
-        let canvas: web_sys::HtmlCanvasElement = canvas
-            .dyn_into::<web_sys::HtmlCanvasElement>()
-            .map_err(|_| ())
-            .unwrap();
-
         let context = canvas
             .get_context("2d")
             .unwrap()
             .unwrap()
-            .dyn_into::<web_sys::CanvasRenderingContext2d>()
+            .dyn_into::<CanvasRenderingContext2d>()
             .unwrap();
 
         self.render(context, viewport_width as f64, viewport_height as f64);
@@ -108,6 +106,7 @@ impl App {
             .expect("should register `requestAnimationFrame` OK");
     }
 
+    /// draws a triangle on the canvas
     fn draw_triangle(context: &CanvasRenderingContext2d, x: f64, y: f64, size: f64, rotation: f64) {
         context.begin_path();
 
@@ -135,29 +134,25 @@ impl App {
         context.fill();
     }
 
+
+    /// draws a circle on the canvas
     fn draw_circle(context: &CanvasRenderingContext2d, x: f64, y: f64, radius: f64) {
         context.begin_path();
 
-        // ---
-        // | Circle's center.
-        // ----- v -v
         let _ = context.arc(x, y, radius, 0.0, 2.0 * std::f64::consts::PI);
-        // ------------------- ^ -^-----------^
-        // | Range at which the circle starts and ends, in radians.
-        // |
-        // | By manipulating these two parameters you can e.g. draw
-        // | only half of a circle, Pac-Man style.
-        // ---
+
         context.set_fill_style(&JsValue::from_str("rgb(0, 255, 128)"));
         context.fill();
     }
 
-    fn render(&mut self, context: CanvasRenderingContext2d, view_width: f64, view_height: f64) {
+    
+    /// render scene 
+    fn render(&self, context: CanvasRenderingContext2d, view_width: f64, view_height: f64) {
         let sim_ref = Rc::clone(&self.sim);
         let rng_ref = Rc::clone(&self.rng);
-
         let cb = Rc::new(RefCell::new(None));
 
+        // render closure that gets called from request_animation_frame 
         *cb.borrow_mut() = Some(Closure::wrap(Box::new({
             let cb = cb.clone();
             move || {
@@ -193,11 +188,11 @@ impl App {
                     )
                 }
 
-                App::request_animation_frame(cb.borrow().as_ref().unwrap());
+                Self::request_animation_frame(cb.borrow().as_ref().unwrap());
             }
         }) as Box<dyn FnMut()>));
 
-        App::request_animation_frame(cb.borrow().as_ref().unwrap());
+        Self::request_animation_frame(cb.borrow().as_ref().unwrap());
     }
 }
 
