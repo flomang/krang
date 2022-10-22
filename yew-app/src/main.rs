@@ -1,34 +1,63 @@
+use gloo::console;
+use lib_simulation as sim;
+use rand::prelude::*;
 use std::cell::RefCell;
-use std::rc::Rc;
-
 use std::f64;
 use std::f64::consts::PI;
+use std::ops::DerefMut;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::CanvasRenderingContext2d;
 use web_sys::{window, HtmlCanvasElement};
 use yew::{html, Component, Context, Html, NodeRef};
-use lib_simulation as sim;
-use rand::prelude::*;
 
-// Wrap gl in Rc (Arc for multi-threaded) so it can be injected into the render-loop closure.
 pub struct App {
     node_ref: NodeRef,
+    sim: Rc<RefCell<sim::Simulation>>,
+    rng: Rc<RefCell<ThreadRng>>,
+}
+
+pub enum Msg {
+    Train,
 }
 
 impl Component for App {
-    type Message = ();
+    type Message = Msg;
     type Properties = ();
 
     fn create(_ctx: &Context<Self>) -> Self {
+        let mut rng = thread_rng();
+        let sim = sim::Simulation::random(&mut rng);
+
         Self {
             node_ref: NodeRef::default(),
+            rng: Rc::new(RefCell::new(rng)),
+            sim: Rc::new(RefCell::new(sim)),
         }
     }
 
-    fn view(&self, _ctx: &Context<Self>) -> Html {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Msg::Train => {
+                console::log!("training...");
+                let mut sim = self.sim.borrow_mut();
+                let mut rng = self.rng.borrow_mut();
+                let stats = sim.train(&mut rng.deref_mut());
+
+                console::log!(format!("done: {:?}", stats));
+                // Return true to cause the displayed change to update
+                true
+            }
+        }
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
-            <canvas id="viewport" width="800" height="800" ref={self.node_ref.clone()} />
+            <div>
+                <canvas id="viewport" width="800" height="800" ref={self.node_ref.clone()} />
+                <button class="train-button" onclick={ctx.link().callback(|_| Msg::Train)}>{ "Train" }</button>
+            </div>
         }
     }
 
@@ -124,16 +153,20 @@ impl App {
     }
 
     fn render(&mut self, context: CanvasRenderingContext2d, view_width: f64, view_height: f64) {
-        let mut rng = thread_rng();
-        let mut sim = sim::Simulation::random(&mut rng);
+        let sim_ref = Rc::clone(&self.sim);
+        let rng_ref = Rc::clone(&self.rng);
+
         let cb = Rc::new(RefCell::new(None));
 
         *cb.borrow_mut() = Some(Closure::wrap(Box::new({
             let cb = cb.clone();
             move || {
+                let mut sim = sim_ref.borrow_mut();
+                let mut rng = rng_ref.borrow_mut();
+
                 context.clear_rect(0.0, 0.0, view_width, view_width);
 
-                sim.step(&mut rng);
+                sim.step(&mut rng.deref_mut());
 
                 let world = sim.world();
 
